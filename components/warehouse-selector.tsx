@@ -2,13 +2,22 @@
 
 import { useInventoryStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Plus } from 'lucide-react'
 
 export function WarehouseSelector() {
-  const { user, currentWarehouse, setCurrentWarehouse } = useInventoryStore()
+  // Solo leemos user y el setter. No leemos currentWarehouse.
+  const user = useInventoryStore((s) => s.user)
+  const setCurrentWarehouse = useInventoryStore((s) => s.setCurrentWarehouse)
 
-  if (!user || !user.warehouses.length) {
+  // Si no hay usuario o no tiene almacenes
+  if (!user || !user.warehouses?.length) {
     return (
       <div className="flex items-center gap-2 p-2 md:p-3 bg-card rounded-lg border border-border">
         <span className="text-xs md:text-sm text-muted-foreground">Sin almacenes</span>
@@ -20,23 +29,33 @@ export function WarehouseSelector() {
     )
   }
 
+  // Valor inicial: el primer almacén
+  const defaultId = user.warehouses[0].id
+
   return (
     <Select
-      value={currentWarehouse?.id || ''}
+      // Importante: usamos defaultValue, NO value
+      defaultValue={defaultId}
       onValueChange={(id) => {
         const warehouse = user.warehouses.find((w) => w.id === id)
-        if (warehouse) setCurrentWarehouse(warehouse)
+        if (warehouse) {
+          // Solo se llama cuando el usuario cambia el select
+          setCurrentWarehouse(warehouse)
+        }
       }}
     >
       <SelectTrigger className="w-full text-xs md:text-sm">
         <SelectValue placeholder="Seleccionar almacén" />
       </SelectTrigger>
+
       <SelectContent>
         {user.warehouses.map((warehouse) => (
           <SelectItem key={warehouse.id} value={warehouse.id}>
             <div className="flex items-center gap-2">
               <span className="text-xs md:text-sm">{warehouse.name}</span>
-              <span className="text-xs text-muted-foreground">({warehouse.location})</span>
+              <span className="text-xs text-muted-foreground">
+                ({warehouse.location})
+              </span>
             </div>
           </SelectItem>
         ))}

@@ -38,70 +38,37 @@ const SAMPLE_USER = {
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState("dashboard")
-  const { setUser, setCurrentWarehouse, user } = useInventoryStore()
+
+  // usar selectores de zustand
+  const setUser = useInventoryStore((s) => s.setUser)
+  const setCurrentWarehouse = useInventoryStore((s) => s.setCurrentWarehouse)
+
   const { registerShortcuts, openShortcutsModal } = useShortcuts()
 
   const shortcuts: KeyboardShortcut[] = [
-    {
-      key: "1",
-      ctrlKey: true,
-      description: "Ir a Dashboard",
-      action: () => setCurrentPage("dashboard"),
-      category: "navegación",
-    },
-    {
-      key: "2",
-      ctrlKey: true,
-      description: "Ir a Productos",
-      action: () => setCurrentPage("products"),
-      category: "navegación",
-    },
-    {
-      key: "3",
-      ctrlKey: true,
-      description: "Ir a Inventario",
-      action: () => setCurrentPage("inventory"),
-      category: "navegación",
-    },
-    {
-      key: "4",
-      ctrlKey: true,
-      description: "Ir a Ventas",
-      action: () => setCurrentPage("sales"),
-      category: "navegación",
-    },
-    {
-      key: "5",
-      ctrlKey: true,
-      description: "Ir a Reportes",
-      action: () => setCurrentPage("reports"),
-      category: "navegación",
-    },
-    {
-      key: "6",
-      ctrlKey: true,
-      description: "Ir a Configuración",
-      action: () => setCurrentPage("settings"),
-      category: "navegación",
-    },
-    {
-      key: "?",
-      description: "Mostrar atajos de teclado",
-      action: () => openShortcutsModal(),
-      category: "otro",
-    },
+    { key: "1", ctrlKey: true, description: "Ir a Dashboard", action: () => setCurrentPage("dashboard"), category: "navegación" },
+    { key: "2", ctrlKey: true, description: "Ir a Productos", action: () => setCurrentPage("products"), category: "navegación" },
+    { key: "3", ctrlKey: true, description: "Ir a Inventario", action: () => setCurrentPage("inventory"), category: "navegación" },
+    { key: "4", ctrlKey: true, description: "Ir a Ventas", action: () => setCurrentPage("sales"), category: "navegación" },
+    { key: "5", ctrlKey: true, description: "Ir a Reportes", action: () => setCurrentPage("reports"), category: "navegación" },
+    { key: "6", ctrlKey: true, description: "Ir a Configuración", action: () => setCurrentPage("settings"), category: "navegación" },
+    { key: "?", description: "Mostrar atajos de teclado", action: () => openShortcutsModal(), category: "otro" },
   ]
 
+  // hook de atajos (esto normalmente solo registra listeners, sin problema)
   useKeyboardShortcuts(shortcuts)
 
+  // ⚠️ ESTE ERA EL CULPABLE: lo dejamos para que corra solo una vez
   useEffect(() => {
     registerShortcuts(shortcuts)
-  }, [registerShortcuts, openShortcutsModal])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // <- sin dependencias para que no se re-ejecute en cada render
 
+  // inicializar usuario/almacén una sola vez
   useEffect(() => {
     setUser(SAMPLE_USER)
     setCurrentWarehouse(SAMPLE_USER.warehouses[0])
-  }, [])
+  }, [setUser, setCurrentWarehouse])
 
   const renderPage = () => {
     switch (currentPage) {

@@ -170,26 +170,61 @@ function PieChartCard({ title, data }) {
 }
 
 export function DashboardPage() {
-  const { sales, products, inventory, currentWarehouse } = useInventoryStore()
+ const sales = useInventoryStore((s) => s.sales)
+  const products = useInventoryStore((s) => s.products)
+  const inventory = useInventoryStore((s) => s.inventory)
+  const currentWarehouse = useInventoryStore((s) => s.currentWarehouse)
 
   const stats = useMemo(() => {
     if (!currentWarehouse) return []
-    
+
     const warehouseProducts = products.filter((p) =>
-      inventory.some((inv) => inv.productId === p.id && inv.warehouseId === currentWarehouse.id)
+      inventory.some(
+        (inv) => inv.productId === p.id && inv.warehouseId === currentWarehouse.id,
+      ),
     )
-    
-    const warehouseSales = sales.filter((s) => s.warehouseId === currentWarehouse.id)
-    const totalRevenue = warehouseSales.reduce((sum, s) => sum + s.totalPrice, 0)
-    
+
+    const warehouseSales = sales.filter(
+      (s) => s.warehouseId === currentWarehouse.id,
+    )
+    const totalRevenue = warehouseSales.reduce(
+      (sum, s) => sum + s.totalPrice,
+      0,
+    )
+
     return [
-      { label: 'Total Productos', value: warehouseProducts.length.toString(), icon: Package, color: 'bg-gradient-to-br from-primary/20 to-primary/5 text-primary' },
-      { label: 'Valor Inventario', value: `$${(warehouseProducts.reduce((sum, p) => sum + p.price, 0)).toFixed(0)}`, icon: DollarSign, color: 'bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary' },
-      { label: 'Bajo Stock', value: '0', icon: AlertCircle, color: 'bg-gradient-to-br from-chart-4/20 to-chart-4/5 text-chart-4' },
-      { label: 'Ventas Hoy', value: warehouseSales.length.toString(), icon: TrendingUp, color: 'bg-gradient-to-br from-accent/20 to-accent/5 text-accent' },
+      {
+        label: 'Total Productos',
+        value: warehouseProducts.length.toString(),
+        icon: Package,
+        color:
+          'bg-gradient-to-br from-primary/20 to-primary/5 text-primary',
+      },
+      {
+        label: 'Valor Inventario',
+        value: `$${warehouseProducts
+          .reduce((sum, p) => sum + p.price, 0)
+          .toFixed(0)}`,
+        icon: DollarSign,
+        color:
+          'bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary',
+      },
+      {
+        label: 'Bajo Stock',
+        value: '0',
+        icon: AlertCircle,
+        color:
+          'bg-gradient-to-br from-chart-4/20 to-chart-4/5 text-chart-4',
+      },
+      {
+        label: 'Ventas Hoy',
+        value: warehouseSales.length.toString(),
+        icon: TrendingUp,
+        color:
+          'bg-gradient-to-br from-accent/20 to-accent/5 text-accent',
+      },
     ]
   }, [currentWarehouse, products, inventory, sales])
-
   const dashboardData = [
     { month: 'Ene', products: 120, revenue: 4000, movimientos: 45, devoluciones: 5 },
     { month: 'Feb', products: 132, revenue: 3000, movimientos: 52, devoluciones: 3 },

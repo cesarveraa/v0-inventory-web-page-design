@@ -45,15 +45,53 @@ export default function Home() {
 
   const { registerShortcuts, openShortcutsModal } = useShortcuts()
 
-  const shortcuts: KeyboardShortcut[] = [
-    { key: "1", ctrlKey: true, description: "Ir a Dashboard", action: () => setCurrentPage("dashboard"), category: "navegación" },
-    { key: "2", ctrlKey: true, description: "Ir a Productos", action: () => setCurrentPage("products"), category: "navegación" },
-    { key: "3", ctrlKey: true, description: "Ir a Inventario", action: () => setCurrentPage("inventory"), category: "navegación" },
-    { key: "4", ctrlKey: true, description: "Ir a Ventas", action: () => setCurrentPage("sales"), category: "navegación" },
-    { key: "5", ctrlKey: true, description: "Ir a Reportes", action: () => setCurrentPage("reports"), category: "navegación" },
-    { key: "6", ctrlKey: true, description: "Ir a Configuración", action: () => setCurrentPage("settings"), category: "navegación" },
-    { key: "?", description: "Mostrar atajos de teclado", action: () => openShortcutsModal(), category: "otro" },
-  ]
+ const shortcuts: KeyboardShortcut[] = [
+  // Navegación
+  { key: "1", ctrlKey: true, description: "Ir a Dashboard", action: () => setCurrentPage("dashboard"), category: "navegación" },
+  { key: "2", ctrlKey: true, description: "Ir a Productos", action: () => setCurrentPage("products"), category: "navegación" },
+  { key: "3", ctrlKey: true, description: "Ir a Inventario", action: () => setCurrentPage("inventory"), category: "navegación" },
+  { key: "4", ctrlKey: true, description: "Ir a Ventas", action:() => setCurrentPage("sales"), category: "navegación" },
+  { key: "5", ctrlKey: true, description: "Ir a Reportes", action: () => setCurrentPage("reports"), category: "navegación" },
+  { key: "6", ctrlKey: true, description: "Ir a Configuración", action: () => setCurrentPage("settings"), category: "navegación" },
+
+  // Atajos globales de formularios rápidos
+  {
+    key: "p",
+    ctrlKey: true,
+    shiftKey: true,
+    description: "Nuevo producto",
+    category: "acciones",
+    action: () => window.dispatchEvent(new CustomEvent("open-quick-product-form")),
+  },
+  {
+    key: "i",
+    ctrlKey: true,
+    shiftKey: true,
+    description: "Ajustar inventario",
+    category: "acciones",
+    action: () => window.dispatchEvent(new CustomEvent("open-quick-inventory-form")),
+  },
+  {
+    key: "s",
+    ctrlKey: true,
+    shiftKey: true,
+    description: "Venta rápida",
+    category: "acciones",
+    action: () => window.dispatchEvent(new CustomEvent("open-quick-sale-form")),
+  },
+
+  // Buscar en Productos
+  {
+    key: "f",
+    description: "Buscar productos",
+    category: "productos",
+    action: () => window.dispatchEvent(new CustomEvent("focus-products-search")),
+  },
+
+  // Mostrar modal de ayuda
+  { key: "?", description: "Mostrar atajos de teclado", action: () => openShortcutsModal(), category: "otro" },
+]
+
 
   // hook de atajos (esto normalmente solo registra listeners, sin problema)
   useKeyboardShortcuts(shortcuts)

@@ -3,14 +3,41 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useInventoryStore } from '@/lib/store'
 import { QuickSaleForm } from '@/components/forms/quick-sale-form'
 import { SalesTable } from '@/components/sales/sales-table'
+import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/use-keyboard-shortcuts'
+import { useShortcuts } from '@/components/shortcuts-provider'
 
 export function SalesPage() {
   const { sales, currentWarehouse } = useInventoryStore()
   const [searchTerm, setSearchTerm] = useState('')
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  const { registerShortcuts } = useShortcuts()
+
+  const shortcuts = useMemo<KeyboardShortcut[]>(
+    () => [
+      {
+        key: 'f',
+        ctrlKey: true,
+        description: 'Buscar ventas',
+        category: 'ventas',
+        action: () => {
+          searchInputRef.current?.focus()
+        },
+      },
+    ],
+    []
+  )
+
+  useKeyboardShortcuts(shortcuts)
+
+  useEffect(() => {
+    registerShortcuts(shortcuts)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const warehouseSales = useMemo(() => {
     if (!currentWarehouse) return []
@@ -52,8 +79,9 @@ export function SalesPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
         <input
+          ref={searchInputRef}
           type="text"
-          placeholder="Buscar ventas..."
+          placeholder="Buscar ventas... (Ctrl+F)"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"

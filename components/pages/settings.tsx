@@ -57,7 +57,7 @@ export function SettingsPage() {
                 <label className="block text-xs md:text-sm font-medium text-foreground mb-2">Nombre de Empresa</label>
                 <input
                   type="text"
-                  defaultValue="InventoryHub Inc."
+                  defaultValue="Abyss Inventario Inc."
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                 />
               </div>
@@ -65,7 +65,7 @@ export function SettingsPage() {
                 <label className="block text-xs md:text-sm font-medium text-foreground mb-2">Email de Contacto</label>
                 <input
                   type="email"
-                  defaultValue="info@inventoryhub.com"
+                  defaultValue="info@Abyss Inventario.com"
                   className="w-full px-4 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                 />
               </div>

@@ -9,7 +9,7 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "InventoryHub - Sistema de Gestión de Inventarios",
+  title: "Abyss Inventario - Sistema de Gestión de Inventarios",
   description: "Plataforma completa para gestionar inventarios, productos, órdenes y reportes",
   generator: "v0.app",
 }

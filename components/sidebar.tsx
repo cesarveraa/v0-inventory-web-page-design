@@ -1,16 +1,17 @@
-'use client'
+"use client"
 
-import { LayoutDashboard, Package, TrendingUp, ShoppingCart, BarChart3, Settings, LogOut, Menu } from 'lucide-react'
-import { useState } from 'react'
-import { WarehouseSelector } from '@/components/warehouse-selector'
+import { LayoutDashboard, Package, TrendingUp, ShoppingCart, BarChart3, Settings, LogOut, Menu } from "lucide-react"
+import { useState } from "react"
+import { WarehouseSelector } from "@/components/warehouse-selector"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'products', label: 'Productos', icon: Package },
-  { id: 'inventory', label: 'Inventario', icon: TrendingUp },
-  { id: 'sales', label: 'Ventas', icon: ShoppingCart },
-  { id: 'reports', label: 'Reportes', icon: BarChart3 },
-  { id: 'settings', label: 'Configuración', icon: Settings },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "products", label: "Productos", icon: Package },
+  { id: "inventory", label: "Inventario", icon: TrendingUp },
+  { id: "sales", label: "Ventas", icon: ShoppingCart },
+  { id: "reports", label: "Reportes", icon: BarChart3 },
+  { id: "settings", label: "Configuración", icon: Settings },
 ]
 
 interface SidebarProps {
@@ -32,9 +33,9 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
 
       <aside
         className={`${
-          isOpen ? 'w-64' : 'w-20'
+          isOpen ? "w-64" : "w-20"
         } transition-all duration-300 bg-card border-r border-border flex flex-col h-screen sticky top-0 max-sm:fixed max-sm:left-0 max-sm:top-0 max-sm:h-screen max-sm:z-40 ${
-          !isOpen && 'max-sm:w-0'
+          !isOpen && "max-sm:w-0"
         }`}
       >
         <div className="p-4 border-b border-border flex items-center justify-between">
@@ -69,9 +70,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
                   setIsOpen(false)
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-foreground hover:bg-muted'
+                  isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
                 }`}
               >
                 <Icon size={20} />
@@ -82,6 +81,17 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         </nav>
 
         <div className="p-4 border-t border-border space-y-2">
+          {isOpen && (
+            <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground">
+              <span>Tema</span>
+              <ThemeToggle />
+            </div>
+          )}
+          {!isOpen && (
+            <div className="flex justify-center">
+              <ThemeToggle />
+            </div>
+          )}
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-muted transition-colors">
             <LogOut size={20} />
             {isOpen && <span className="text-sm font-medium">Salir</span>}

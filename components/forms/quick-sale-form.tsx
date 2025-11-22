@@ -117,19 +117,13 @@ export function QuickSaleForm() {
   }
 
   // Esc global cuando el modal está abierto
-  useEffect(() => {
-    if (!isOpen) return
+// Abrir Venta Rápida desde cualquier pantalla (Ctrl+Shift+V global)
+useEffect(() => {
+  const open = () => setIsOpen(true)
+  window.addEventListener("open-quick-sale-form", open)
+  return () => window.removeEventListener("open-quick-sale-form", open)
+}, [])
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        closeModal()
-      }
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isOpen])
 
   // 🔘 Botón cuando el modal está cerrado
   if (!isOpen) {

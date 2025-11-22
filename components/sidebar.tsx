@@ -1,16 +1,26 @@
 "use client"
 
-import { LayoutDashboard, Package, TrendingUp, ShoppingCart, BarChart3, Settings, LogOut } from "lucide-react"
+import {
+  LayoutDashboard,
+  Package,
+  TrendingUp,
+  ShoppingCart,
+  BarChart3,
+  Settings,
+  LogOut,
+  HelpCircle,
+} from "lucide-react"
 import { WarehouseSelector } from "@/components/warehouse-selector"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useShortcuts } from "@/components/shortcuts-provider"
 
 const menuItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "products", label: "Productos", icon: Package },
-  { id: "inventory", label: "Inventario", icon: TrendingUp },
-  { id: "sales", label: "Ventas", icon: ShoppingCart },
-  { id: "reports", label: "Reportes", icon: BarChart3 },
-  { id: "settings", label: "Configuración", icon: Settings },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, shortcut: "Ctrl+1" },
+  { id: "products", label: "Productos", icon: Package, shortcut: "Ctrl+2" },
+  { id: "inventory", label: "Inventario", icon: TrendingUp, shortcut: "Ctrl+3" },
+  { id: "sales", label: "Ventas", icon: ShoppingCart, shortcut: "Ctrl+4" },
+  { id: "reports", label: "Reportes", icon: BarChart3, shortcut: "Ctrl+5" },
+  { id: "settings", label: "Configuración", icon: Settings, shortcut: "Ctrl+6" },
 ]
 
 interface SidebarProps {
@@ -19,6 +29,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+  const { openShortcutsModal } = useShortcuts()
+
   return (
     <aside
       className={`w-64 transition-all duration-300 bg-card border-r border-border flex flex-col h-screen sticky top-0
@@ -51,12 +63,14 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              title={item.shortcut}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors group ${
                 isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
               }`}
             >
               <Icon size={20} />
-              <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+              <span className="text-xs text-muted-foreground group-hover:visible hidden">{item.shortcut}</span>
             </button>
           )
         })}
@@ -64,6 +78,15 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
 
       {/* Tema + Salir */}
       <div className="p-4 border-t border-border space-y-2">
+        <button
+          onClick={openShortcutsModal}
+          title="Presiona ? para ver atajos"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-muted transition-colors"
+        >
+          <HelpCircle size={20} />
+          <span className="text-sm font-medium flex-1 text-left">Atajos</span>
+          <span className="text-xs text-muted-foreground">?</span>
+        </button>
         <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground">
           <span>Tema</span>
           <ThemeToggle />

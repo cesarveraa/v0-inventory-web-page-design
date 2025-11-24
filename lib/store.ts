@@ -1,6 +1,14 @@
 // lib/store.ts
 import { create } from 'zustand'
-import { User, Warehouse, Product, Sale, InventoryItem } from './types'
+import {
+  User,
+  Warehouse,
+  Product,
+  Sale,
+  InventoryItem,
+  mapProductoToProduct,   
+} from './types'
+
 import {
   listProductos,
   createProducto,
@@ -8,9 +16,8 @@ import {
   deleteProducto,
   type ProductoCreateDTO,
   type ProductoUpdateDTO,
-  type ProductoReadDTO,
 } from './api/products'
-import { mapProductoToProduct } from './types'
+
 
 interface InventoryStore {
   user: User | null
@@ -20,11 +27,11 @@ interface InventoryStore {
   inventory: InventoryItem[]
   loadingProducts: boolean
 
-  // actions sync
+  // setters básicos
   setUser: (user: User) => void
   setCurrentWarehouse: (warehouse: Warehouse) => void
-  setProducts: (products: Product[]) => void
 
+  setProducts: (products: Product[]) => void
   addProduct: (product: Product) => void
   updateProduct: (product: Product) => void
   removeProduct: (id: string) => void
@@ -34,10 +41,10 @@ interface InventoryStore {
   getProductsByWarehouse: (warehouseId: string) => Product[]
   getSalesByWarehouse: (warehouseId: string) => Sale[]
 
-  // actions async (API)
+  // acciones async contra el backend de productos
   fetchProducts: (params?: { search?: string }) => Promise<void>
-  createProductApi: (data: ProductoCreateDTO) => Promise<ProductoReadDTO>
-  updateProductApi: (id: number, data: ProductoUpdateDTO) => Promise<ProductoReadDTO>
+  createProductApi: (data: ProductoCreateDTO) => Promise<void>
+  updateProductApi: (id: number, data: ProductoUpdateDTO) => Promise<void>
   deleteProductApi: (id: number) => Promise<void>
 }
 
@@ -51,6 +58,7 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
 
   setUser: (user) => set({ user }),
   setCurrentWarehouse: (warehouse) => set({ currentWarehouse: warehouse }),
+
   setProducts: (products) => set({ products }),
 
   addProduct: (product) =>
@@ -66,7 +74,8 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
       products: state.products.filter((p) => p.id !== id),
     })),
 
-  addSale: (sale) => set((state) => ({ sales: [...state.sales, sale] })),
+  addSale: (sale) =>
+    set((state) => ({ sales: [...state.sales, sale] })),
 
   updateInventory: (item) =>
     set((state) => ({
@@ -88,7 +97,7 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
     return get().sales.filter((s) => s.warehouseId === warehouseId)
   },
 
-  // ---- acciones async ligadas al backend ----
+  // -------- acciones async contra el microservicio de productos --------
   async fetchProducts(params) {
     set({ loadingProducts: true })
     try {
@@ -97,6 +106,7 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
         only_active: true,
         limit: 200,
       })
+      // data es ProductoRead[] del backend → los mapeamos a Product UI
       const mapped = data.map(mapProductoToProduct)
       set({ products: mapped })
     } finally {
@@ -108,14 +118,12 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
     const created = await createProducto(data)
     const mapped = mapProductoToProduct(created)
     get().addProduct(mapped)
-    return created
   },
 
   async updateProductApi(id, data) {
     const updated = await updateProducto(id, data)
     const mapped = mapProductoToProduct(updated)
     get().updateProduct(mapped)
-    return updated
   },
 
   async deleteProductApi(id) {

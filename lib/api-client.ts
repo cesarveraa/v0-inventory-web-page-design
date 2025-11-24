@@ -1,66 +1,89 @@
-// lib/api-client.ts
-import { useAuthStore } from '@/lib/auth-store'
+'use client'
 
-const PRODUCT_API_BASE =
-  process.env.NEXT_PUBLIC_PRODUCT_API_URL ?? 'http://localhost:8002/api/v1'
+import { useAuthStore } from './auth-store'
 
-type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
+/**
+ * Base URL del microservicio de productos.
+ * Ajusta la env si quieres otro host/puerto.
+ *
+ * Ejemplo .env.local:
+ *   NEXT_PUBLIC_PRODUCTS_API_URL=http://localhost:8001/api/v1
+ */
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_PRODUCTS_API_URL ?? 'http://localhost:8000/api/v1'
 
-interface ApiOptions {
-  method?: HttpMethod
-  body?: any
-  query?: Record<string, any>
-  signal?: AbortSignal
+// Opciones extra para apiFetch
+export interface ApiOptions extends RequestInit {
+  /**
+   * Si false, NO manda Authorization (útil para /auth/login).
+   * Por defecto true.
+   */
+  auth?: boolean
 }
 
 /**
- * Wrapper genérico para llamar a tu product-service.
- * - Adjunta Authorization: Bearer <token> si existe en auth-store
- * - Envía cookies (para el caso de auth por cookie)
+ * Obtiene el token desde el auth-store o localStorage.
+ * Se espera que el auth-store guarde el accessToken
+ * y que también lo persista en localStorage con la key 'abyss.token'.
  */
-export async function apiFetch<T>(
-  path: string,
-  { method = 'GET', body, query, signal }: ApiOptions = {}
-): Promise<T> {
-  const token = useAuthStore.getState().accessToken // ajusta el nombre si es distinto
-
-  const url = new URL(path.startsWith('http') ? path : PRODUCT_API_BASE + path)
-
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
-      if (value === undefined || value === null) return
-      url.searchParams.set(key, String(value))
-    })
-  }
-
-  const res = await fetch(url.toString(), {
-    method,
-    signal,
-    credentials: 'include', // para cookies http-only
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-
-  if (!res.ok) {
-    // Si es 401, puedes disparar logout automáticamente si quieres
-    let errorText = ''
-    try {
-      const data = await res.json()
-      errorText = data.detail ?? JSON.stringify(data)
-    } catch {
-      errorText = await res.text()
+function getTokenFromStore(): string | null {
+  try {
+    const state = useAuthStore.getState() as any
+    if (state?.accessToken) {
+      return state.accessToken as string
     }
-    throw new Error(`API error (${res.status}): ${errorText}`)
+
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('abyss.token')
+      if (stored) return stored
+    }
+  } catch {
+    // ignorar errores silenciosamente
+  }
+  return null
+}
+
+/**
+ * Cliente genérico para consumir la API del backend.
+ * - Agrega JWT en Authorization si auth !== false
+ * - Usa credentials: 'include' por si usas cookies (Supabase, etc.)
+ * - Devuelve JSON tipado (si el backend responde JSON)
+ */
+
+export async function apiFetch(path: string, options: ApiOptions = {}) {
+  const { accessToken } = useAuthStore.getState()
+  const headers = new Headers(options.headers || {})
+
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
   }
 
-  if (res.status === 204) {
-    // no content
-    // @ts-expect-error
-    return null
+  if (options.auth !== false && accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
   }
 
-  return (await res.json()) as T
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include',
+    })
+
+    if (!res.ok) {
+      let msg = ''
+      try {
+        const data = await res.json()
+        msg = (data as any).detail ?? JSON.stringify(data)
+      } catch {
+        msg = await res.text()
+      }
+      throw new Error(`API error (${res.status}): ${msg}`)
+    }
+
+    if (res.status === 204) return null
+    return res.json()
+  } catch (err) {
+    console.error('❌ apiFetch error:', err)
+    throw err
+  }
 }

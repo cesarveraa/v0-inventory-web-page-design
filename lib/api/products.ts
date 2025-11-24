@@ -1,5 +1,5 @@
 // lib/api/products.ts
-import { apiFetch } from './api-client'
+import { apiFetch } from '../api-client'
 
 export interface ProductoAtributoDTO {
   id_atributo?: number

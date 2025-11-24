@@ -11,31 +11,20 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useInventoryStore } from '@/lib/store'
-import {
-  listCategorias,
-  listProveedores,
-  listUnidadesMedida,
-} from '@/lib/api/catalogs'
-import type {
-  CategoriaDTO,
-  ProveedorDTO,
-  UnidadMedidaDTO,
-} from '@/lib/api/products'
-import type { ProductoCreateDTO } from '@/lib/api/products'
 import { Plus } from 'lucide-react'
+import { useInventoryStore } from '@/lib/store'
+import { listCategorias, listProveedores, listUnidadesMedida } from '@/lib/api/catalogs'
+import type { CategoriaDTO, ProveedorDTO, UnidadMedidaDTO, ProductoCreateDTO } from '@/lib/api/products'
 
 interface QuickProductFormProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
 
-export function QuickProductForm({
-  open: controlledOpen,
-  onOpenChange,
-}: QuickProductFormProps) {
+export function QuickProductForm({ open: controlledOpen, onOpenChange }: QuickProductFormProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+
   const [categorias, setCategorias] = useState<CategoriaDTO[]>([])
   const [proveedores, setProveedores] = useState<ProveedorDTO[]>([])
   const [unidades, setUnidades] = useState<UnidadMedidaDTO[]>([])
@@ -60,7 +49,6 @@ export function QuickProductForm({
   }
 
   useEffect(() => {
-    // cargar catálogos al abrir por primera vez
     if (!realOpen) return
     ;(async () => {
       try {

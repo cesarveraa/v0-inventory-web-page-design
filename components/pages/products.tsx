@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Search, RefreshCw } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useInventoryStore } from '@/lib/store'
 import { QuickProductForm } from '@/components/forms/quick-product-form'
@@ -11,15 +11,8 @@ import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/use-keyboar
 import { useShortcuts } from '@/components/shortcuts-provider'
 
 export function ProductsPage() {
-  const {
-    products,
-    fetchProducts,
-    loadingProducts,
-    deleteProductApi,
-  } = useInventoryStore()
-
+  const { products } = useInventoryStore()
   const [searchTerm, setSearchTerm] = useState('')
-  const [isQuickFormOpen, setIsQuickFormOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   const { registerShortcuts } = useShortcuts()
@@ -35,42 +28,22 @@ export function ProductsPage() {
           searchInputRef.current?.focus()
         },
       },
-      {
-        key: 'n',
-        ctrlKey: true,
-        description: 'Nuevo producto rápido',
-        category: 'productos',
-        action: () => setIsQuickFormOpen(true),
-      },
-      {
-        key: 'r',
-        ctrlKey: true,
-        description: 'Recargar productos',
-        category: 'productos',
-        action: () => {
-          void fetchProducts({ search: searchTerm })
-        },
-      },
     ],
-    [fetchProducts, searchTerm]
+    []
   )
 
   useKeyboardShortcuts(shortcuts)
 
   useEffect(() => {
     registerShortcuts(shortcuts)
-    // cargar productos al entrar
-    void fetchProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const filteredProducts = useMemo(() => {
-    const term = searchTerm.toLowerCase()
     return products.filter(
       (p) =>
-        p.name.toLowerCase().includes(term) ||
-        p.sku.toLowerCase().includes(term) ||
-        p.category.toLowerCase().includes(term)
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [products, searchTerm])
 
@@ -81,19 +54,7 @@ export function ProductsPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Productos</h1>
           <p className="text-muted-foreground mt-2">Gestiona tu catálogo de productos</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => void fetchProducts({ search: searchTerm })}
-            disabled={loadingProducts}
-          >
-            <RefreshCw className={`w-4 h-4 ${loadingProducts ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline">Recargar</span>
-          </Button>
-          <QuickProductForm open={isQuickFormOpen} onOpenChange={setIsQuickFormOpen} />
-        </div>
+        <QuickProductForm />
       </div>
 
       <div className="relative">
@@ -109,10 +70,7 @@ export function ProductsPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <ProductTable
-          products={filteredProducts}
-          onDelete={(id) => void deleteProductApi(Number(id))}
-        />
+        <ProductTable products={filteredProducts} />
       </Card>
     </div>
   )

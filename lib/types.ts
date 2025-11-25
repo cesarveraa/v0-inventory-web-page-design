@@ -61,19 +61,3 @@ export interface OrderItem {
   quantity: number
   price: number
 }
-import type { ProductoReadDTO } from './api/products'
-
-export function mapProductoToProduct(p: ProductoReadDTO): Product {
-  const mainCategory = p.categorias?.[0]?.nombre ?? 'Sin categoría'
-
-  return {
-    id: String(p.id_producto),
-    name: p.nombre,
-    sku: p.codigo_sku,
-    price: p.precio,
-    cost: p.precio, // o cámbialo cuando tengas campo "costo" real
-    category: mainCategory,
-    description: p.descripcion ?? '',
-    image: undefined,
-  }
-}

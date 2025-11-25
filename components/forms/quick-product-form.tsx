@@ -1,256 +1,221 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useInventoryStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus } from 'lucide-react'
-import { useInventoryStore } from '@/lib/store'
-import { listCategorias, listProveedores, listUnidadesMedida } from '@/lib/api/catalogs'
-import type { CategoriaDTO, ProveedorDTO, UnidadMedidaDTO, ProductoCreateDTO } from '@/lib/api/products'
+import { Card } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Plus, X } from 'lucide-react'
+import { useKeyboardShortcuts, type KeyboardShortcut } from '@/hooks/use-keyboard-shortcuts'
+import { useShortcuts } from '@/components/shortcuts-provider'
 
-interface QuickProductFormProps {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-}
+export function QuickProductForm() {
+  const { currentWarehouse, products, updateInventory, inventory } = useInventoryStore()
 
-export function QuickProductForm({ open: controlledOpen, onOpenChange }: QuickProductFormProps) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const [categorias, setCategorias] = useState<CategoriaDTO[]>([])
-  const [proveedores, setProveedores] = useState<ProveedorDTO[]>([])
-  const [unidades, setUnidades] = useState<UnidadMedidaDTO[]>([])
-
-  const createProductApi = useInventoryStore((s) => s.createProductApi)
-
-  const [form, setForm] = useState({
-    nombre: '',
-    codigo_sku: '',
-    precio: '',
-    stock_minimo_global: '0',
-    descripcion: '',
-    proveedorId: '',
-    unidadId: '',
-    categoriaId: '',
+  const [isOpen, setIsOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    productId: '',
+    quantity: '',
+    minStock: '',
+    maxStock: '',
   })
 
-  const realOpen = controlledOpen ?? open
-  const handleOpenChange = (value: boolean) => {
-    setOpen(value)
-    onOpenChange?.(value)
-  }
+  const { registerShortcuts } = useShortcuts()
+
+  // ⭐ Atajo global: Ctrl + Shift + I → abrir formulario
+  const shortcuts = useMemo<KeyboardShortcut[]>(
+    () => [
+      {
+        key: 'i',
+        ctrlKey: true,
+        shiftKey: true,
+        description: 'Ajustar Stock',
+        category: 'inventario',
+        action: () => setIsOpen(true),
+      },
+    ],
+    []
+  )
+
+  useKeyboardShortcuts(shortcuts)
 
   useEffect(() => {
-    if (!realOpen) return
-    ;(async () => {
-      try {
-        const [cats, provs, units] = await Promise.all([
-          listCategorias(),
-          listProveedores(),
-          listUnidadesMedida(),
-        ])
-        setCategorias(cats)
-        setProveedores(provs)
-        setUnidades(units)
-      } catch (e) {
-        console.error(e)
+    registerShortcuts(shortcuts)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const resetForm = () => {
+    setFormData({
+      productId: '',
+      quantity: '',
+      minStock: '',
+      maxStock: '',
+    })
+  }
+
+  const closeModal = () => {
+    resetForm()
+    setIsOpen(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation()
+      closeModal()
+    }
+  }
+
+  // ESC global mientras el modal esté abierto
+  useEffect(() => {
+    if (!isOpen) return
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        closeModal()
       }
-    })()
-  }, [realOpen])
+    }
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isOpen])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.proveedorId || !form.unidadId) return
 
-    const payload: ProductoCreateDTO = {
-      codigo_sku: form.codigo_sku.trim(),
-      codigo_barra: null,
-      nombre: form.nombre.trim(),
-      descripcion: form.descripcion || null,
-      stock_minimo_global: Number(form.stock_minimo_global) || 0,
-      estado: true,
-      precio: Number(form.precio) || 0,
-      proveedores_id_proveedor: Number(form.proveedorId),
-      unidades_medida_id_unidad: Number(form.unidadId),
-      categorias_ids: form.categoriaId ? [Number(form.categoriaId)] : [],
-      atributos: [],
+    if (!currentWarehouse || !formData.productId) return
+
+    const existingItem = inventory.find(
+      (inv) => inv.productId === formData.productId && inv.warehouseId === currentWarehouse.id
+    )
+
+    const inventoryItem = {
+      id: existingItem?.id || Date.now().toString(),
+      productId: formData.productId,
+      warehouseId: currentWarehouse.id,
+      quantity: parseInt(formData.quantity),
+      minStock: parseInt(formData.minStock),
+      maxStock: parseInt(formData.maxStock),
+      lastUpdated: new Date(),
     }
 
-    try {
-      setLoading(true)
-      await createProductApi(payload)
-      handleOpenChange(false)
-      setForm({
-        nombre: '',
-        codigo_sku: '',
-        precio: '',
-        stock_minimo_global: '0',
-        descripcion: '',
-        proveedorId: '',
-        unidadId: '',
-        categoriaId: '',
-      })
-    } finally {
-      setLoading(false)
-    }
+    updateInventory(inventoryItem)
+    closeModal()
   }
 
+  // 🔘 Botón cuando está cerrado
+  if (!isOpen) {
+    return (
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="w-full md:w-auto gap-2"
+        title="Ajustar Stock (Ctrl+Shift+I)"
+      >
+        <Plus className="w-4 h-4" />
+        Ajustar Stock
+        <span className="hidden md:inline text-[10px] text-muted-foreground">
+          (Ctrl+Shift+I)
+        </span>
+      </Button>
+    )
+  }
+
+  // 🧾 Modal con formulario
   return (
-    <Dialog open={realOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-2">
-          <Plus className="w-4 h-4" />
-          <span className="hidden md:inline">Nuevo producto</span>
-          <span className="md:hidden">Nuevo</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Crear producto rápido</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <Card className="p-4 md:p-6 w-full max-w-md shadow-xl">
+        <form onSubmit={handleSubmit} className="space-y-4" onKeyDown={handleKeyDown}>
+          {/* Header */}
+          <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="nombre">Nombre</Label>
-              <Input
-                id="nombre"
-                name="nombre"
-                value={form.nombre}
-                onChange={handleChange}
-                required
-              />
+              <h3 className="font-semibold text-base md:text-lg">Ajustar Inventario</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Usa <span className="font-mono">Esc</span> para cerrar rápidamente
+              </p>
             </div>
-            <div>
-              <Label htmlFor="codigo_sku">SKU</Label>
-              <Input
-                id="codigo_sku"
-                name="codigo_sku"
-                value={form.codigo_sku}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="precio">Precio</Label>
-              <Input
-                id="precio"
-                name="precio"
-                type="number"
-                step="0.01"
-                value={form.precio}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="stock_minimo_global">Stock mínimo global</Label>
-              <Input
-                id="stock_minimo_global"
-                name="stock_minimo_global"
-                type="number"
-                value={form.stock_minimo_global}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="descripcion">Descripción</Label>
-            <Input
-              id="descripcion"
-              name="descripcion"
-              value={form.descripcion}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="proveedorId">Proveedor</Label>
-              <select
-                id="proveedorId"
-                name="proveedorId"
-                value={form.proveedorId}
-                onChange={handleChange}
-                className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm"
-                required
-              >
-                <option value="">Selecciona...</option>
-                {proveedores.map((p) => (
-                  <option key={p.id_proveedor} value={p.id_proveedor}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="unidadId">Unidad</Label>
-              <select
-                id="unidadId"
-                name="unidadId"
-                value={form.unidadId}
-                onChange={handleChange}
-                className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm"
-                required
-              >
-                <option value="">Selecciona...</option>
-                {unidades.map((u) => (
-                  <option key={u.id_unidad} value={u.id_unidad}>
-                    {u.nombre} ({u.abreviatura})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="categoriaId">Categoría</Label>
-              <select
-                id="categoriaId"
-                name="categoriaId"
-                value={form.categoriaId}
-                onChange={handleChange}
-                className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm"
-              >
-                <option value="">Sin categoría</option>
-                {categorias.map((c) => (
-                  <option key={c.id_categoria} value={c.id_categoria}>
-                    {c.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
+            <button
+              onClick={closeModal}
               type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Select de producto */}
+          <div className="space-y-2">
+            <Label htmlFor="product">Producto</Label>
+            <Select
+              value={formData.productId}
+              onValueChange={(id) => setFormData({ ...formData, productId: id })}
+            >
+              <SelectTrigger id="product">
+                <SelectValue placeholder="Seleccionar producto" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Cantidad</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="0"
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                placeholder="0"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="min">Mínimo</Label>
+              <Input
+                id="min"
+                type="number"
+                min="0"
+                value={formData.minStock}
+                onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                placeholder="0"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="max">Máximo</Label>
+              <Input
+                id="max"
+                type="number"
+                min="0"
+                value={formData.maxStock}
+                onChange={(e) => setFormData({ ...formData, maxStock: e.target.value })}
+                placeholder="0"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={closeModal}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : 'Guardar'}
-            </Button>
+            <Button type="submit">Guardar</Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Card>
+    </div>
   )
 }

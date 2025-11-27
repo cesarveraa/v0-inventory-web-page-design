@@ -16,6 +16,9 @@ import {
 import { WarehouseSelector } from "@/components/warehouse-selector"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useShortcuts } from "@/components/shortcuts-provider"
+import { useRouter } from "next/navigation"
+import { useAuthStore } from "@/lib/auth-store"
+
 
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, shortcut: "Ctrl+1" },
@@ -35,7 +38,18 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   const { openShortcutsModal } = useShortcuts()
   const [isOpen, setIsOpen] = useState(true)
 
+  const router = useRouter()
+  const logout = useAuthStore((s) => s.logout)
+
   const toggle = () => setIsOpen((prev) => !prev)
+
+  const handleLogout = async () => {
+    try {
+      await logout()      // llama a /api/auth/logout y limpia el estado
+    } finally {
+      router.push("/login")
+    }
+  }
 
   return (
     <aside
@@ -105,9 +119,8 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
               key={item.id}
               onClick={() => onPageChange(item.id)}
               title={item.shortcut}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group ${
-                active ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
-              }`}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group ${active ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
+                }`}
             >
               <Icon size={20} className="flex-shrink-0" />
               {isOpen && (
@@ -146,7 +159,10 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
           </div>
         )}
 
-        <button className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-foreground hover:bg-muted transition-colors">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-foreground hover:bg-muted transition-colors"
+        >
           <LogOut size={20} className="flex-shrink-0" />
           {isOpen && <span className="text-sm font-medium">Salir</span>}
         </button>

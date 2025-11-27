@@ -15,6 +15,7 @@ import { useAuthStore } from "@/lib/auth-store"
 import { useRouter } from "next/navigation"
 import { Landing } from "@/components/landing"
 import { LoadingSpinner } from "@/components/loading-spinner"
+import { Menu } from "lucide-react"
 
 const SAMPLE_USER = {
   id: "user-1",
@@ -45,15 +46,14 @@ export default function Home() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState("dashboard")
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  // usar selectores de zustand
   const setUser = useInventoryStore((s) => s.setUser)
   const setCurrentWarehouse = useInventoryStore((s) => s.setCurrentWarehouse)
 
   const { registerShortcuts, openShortcutsModal } = useShortcuts()
 
   const shortcuts: KeyboardShortcut[] = [
-    // Navegación
     {
       key: "1",
       ctrlKey: true,
@@ -96,8 +96,6 @@ export default function Home() {
       action: () => setCurrentPage("settings"),
       category: "navegación",
     },
-
-    // 💡 Atajo global: ir a Ventas y abrir Venta Rápida
     {
       key: "v",
       ctrlKey: true,
@@ -105,17 +103,12 @@ export default function Home() {
       description: "Ir a Ventas y abrir Venta rápida",
       category: "acciones",
       action: () => {
-        // 1. Cambiar de pantalla
         setCurrentPage("sales")
-
-        // 2. Esperar a que SalesPage monte y después abrir QuickSaleForm
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent("open-quick-sale-form"))
         }, 50)
       },
     },
-
-    // Modal de ayuda general
     {
       key: "?",
       description: "Mostrar atajos de teclado",
@@ -124,14 +117,12 @@ export default function Home() {
     },
   ]
 
-  // hook de atajos (esto normalmente solo registra listeners, sin problema)
   useKeyboardShortcuts(shortcuts)
 
-  // ⚠️ ESTE ERA EL CULPABLE: lo dejamos para que corra solo una vez
   useEffect(() => {
     registerShortcuts(shortcuts)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // <- sin dependencias para que no se re-ejecute en cada render
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -143,7 +134,6 @@ export default function Home() {
     }
   }, [isAuthenticated, router, mounted])
 
-  // inicializar usuario/almacén una sola vez
   useEffect(() => {
     if (isAuthenticated) {
       setUser(SAMPLE_USER)
@@ -179,9 +169,16 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-      <main className="flex-1 overflow-auto">{renderPage()}</main>
-    </div>
-  )
+  <div className="flex h-screen bg-background">
+    <Sidebar
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+    />
+
+    <main className="flex-1 overflow-auto">
+      {renderPage()}
+    </main>
+  </div>
+)
+
 }

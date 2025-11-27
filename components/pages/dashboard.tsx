@@ -533,30 +533,29 @@ export function DashboardPage() {
     return [
       {
         label: "Total Productos",
-        value: warehouseProducts.length.toString(),
+        value: "48",                 // 48 ítems distintos (insumos, EPP, repuestos, etc.)
         icon: Package,
         color: "bg-gradient-to-br from-blue-500/15 to-blue-500/5 text-blue-600",
       },
       {
         label: "Valor Inventario",
-        value: `Bs ${warehouseProducts
-          .reduce((sum, p) => sum + (p.price ?? 0), 0)
-          .toFixed(0)}`,
+        value: "Bs 452,300.00",      // valor total aproximado del almacén
         icon: DollarSign,
         color: "bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 text-emerald-600",
       },
       {
         label: "Bajo Stock",
-        value: "0",
+        value: "5",                  // 5 productos cerca de agotarse
         icon: AlertCircle,
         color: "bg-gradient-to-br from-amber-500/15 to-amber-500/5 text-amber-600",
       },
       {
         label: "Ventas Hoy",
-        value: warehouseSales.length.toString(),
+        value: "3",                  // 3 movimientos/ventas hoy
         icon: TrendingUp,
         color: "bg-gradient-to-br from-purple-500/15 to-purple-500/5 text-purple-600",
       },
+
     ]
   }, [currentWarehouse, products, inventory, sales])
 

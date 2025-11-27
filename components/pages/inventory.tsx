@@ -1,133 +1,208 @@
-'use client'
+"use client"
 
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { AlertTriangle, TrendingDown, Plus } from 'lucide-react'
-import { useInventoryStore } from '@/lib/store'
-import { useMemo } from 'react'
-import { QuickInventoryForm } from '@/components/forms/quick-inventory-form'
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { AlertTriangle, TrendingDown, Plus } from "lucide-react"
+import { useInventoryStore } from "@/lib/store"
+import { useMemo, useState, FormEvent, useEffect } from "react"
+import { QuickInventoryForm } from "@/components/forms/quick-inventory-form"
+
+type DemoProduct = {
+  id: string
+  name: string
+  sku: string
+}
+
+type DemoInventoryItem = {
+  id: string
+  productId: string
+  warehouseId: string
+  quantity: number
+  minStock: number
+  maxStock: number
+}
 
 export function InventoryPage() {
   const { inventory, currentWarehouse, products } = useInventoryStore()
 
+  /* 🔹 Productos demo SOLO para esta pantalla */
+  const demoProducts: DemoProduct[] = [
+    { id: "D-ANFO", name: "Explosivo ANFO 25kg", sku: "ANFO-25" },
+    { id: "D-CASCO", name: "Casco minero", sku: "CASCO-MIN" },
+    { id: "D-GUANTES", name: "Guantes reforzados", sku: "GUANTE-CUERO" },
+    { id: "D-PERF", name: "Perforadora neumática", sku: "PERF-01" },
+  ]
+
+  const usableProducts =
+    products.length > 0 ? products : demoProducts
+
+  const [useDemoInventory, setUseDemoInventory] = useState(true)
+  const [customInventory, setCustomInventory] = useState<DemoInventoryItem[]>([])
+
+  /* 🔹 Inventario demo fijo */
+  const demoInventory = useMemo<DemoInventoryItem[]>(() => {
+    if (!currentWarehouse) return []
+    return usableProducts.map((p, i) => ({
+      id: `demo-${p.id}`,
+      productId: p.id,
+      warehouseId: currentWarehouse.id,
+      quantity: [0, 8, 25, 120][i] ?? 15,
+      minStock: 20,
+      maxStock: 200,
+    }))
+  }, [usableProducts, currentWarehouse])
+
+  const allInventory = [...demoInventory, ...customInventory]
+
   const warehouseInventory = useMemo(() => {
     if (!currentWarehouse) return []
-    return inventory
-      .filter((inv) => inv.warehouseId === currentWarehouse.id)
-      .map((inv) => ({
-        ...inv,
-        product: products.find((p) => p.id === inv.productId),
+    return allInventory
+      .filter(i => i.warehouseId === currentWarehouse.id)
+      .map(i => ({
+        ...i,
+        product: usableProducts.find(p => p.id === i.productId),
       }))
-      .filter((item) => item.product)
-  }, [inventory, currentWarehouse, products])
+  }, [allInventory, usableProducts, currentWarehouse])
 
-  const criticalItems = warehouseInventory.filter((item) => item.quantity === 0)
-  const lowStockItems = warehouseInventory.filter((item) => item.quantity > 0 && item.quantity < item.minStock)
+  const criticalItems = warehouseInventory.filter(i => i.quantity === 0)
+  const lowStockItems = warehouseInventory.filter(
+    i => i.quantity > 0 && i.quantity < i.minStock
+  )
+
+  /* ➕ Agregar inventario */
+  const [newItem, setNewItem] = useState({
+    productId: "",
+    quantity: "",
+    minStock: "",
+    maxStock: "",
+  })
+
+  const handleAddInventory = (e: FormEvent) => {
+    e.preventDefault()
+    if (!currentWarehouse || !newItem.productId) return
+
+    setCustomInventory(prev => [
+      ...prev,
+      {
+        id: `custom-${Date.now()}`,
+        warehouseId: currentWarehouse.id,
+        productId: newItem.productId,
+        quantity: Number(newItem.quantity) || 0,
+        minStock: Number(newItem.minStock) || 20,
+        maxStock: Number(newItem.maxStock) || 200,
+      },
+    ])
+
+    setNewItem({ productId: "", quantity: "", minStock: "", maxStock: "" })
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-start flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Control de Inventario</h1>
-          <p className="text-muted-foreground mt-2">Monitorea niveles de stock en {currentWarehouse?.name}</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Control de Inventario</h1>
+          <p className="text-muted-foreground">
+            Monitoreo de stock en {currentWarehouse?.name ?? "almacén demo"}
+          </p>
         </div>
         <QuickInventoryForm />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="p-4 border-destructive/50 bg-destructive/5">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="text-destructive mt-1" size={24} />
+      {/* Alertas */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Card className="p-4 bg-destructive/5 border-destructive/30">
+          <div className="flex gap-3">
+            <AlertTriangle className="text-destructive" />
             <div>
-              <h3 className="font-semibold text-foreground">Alertas Críticas</h3>
-              <p className="text-sm text-muted-foreground mt-1">{criticalItems.length} productos agotados</p>
+              <p className="font-semibold">Productos agotados</p>
+              <p className="text-sm">{criticalItems.length}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 border-chart-4/50 bg-chart-4/5">
-          <div className="flex items-start gap-3">
-            <TrendingDown className="text-chart-4 mt-1" size={24} />
+
+        <Card className="p-4 bg-chart-4/5 border-chart-4/30">
+          <div className="flex gap-3">
+            <TrendingDown className="text-chart-4" />
             <div>
-              <h3 className="font-semibold text-foreground">Bajo Stock</h3>
-              <p className="text-sm text-muted-foreground mt-1">{lowStockItems.length} productos bajo mínimo</p>
+              <p className="font-semibold">Bajo stock</p>
+              <p className="text-sm">{lowStockItems.length}</p>
             </div>
           </div>
         </Card>
       </div>
 
-      {criticalItems.length > 0 && (
-        <Card className="p-4 md:p-6">
-          <h2 className="text-lg md:text-xl font-bold text-foreground mb-4">Productos Agotados</h2>
-          <div className="space-y-3">
-            {criticalItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-4 bg-destructive/5 rounded-lg border border-destructive/20 flex-wrap gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground">{item.product?.name}</p>
-                  <p className="text-xs md:text-sm text-muted-foreground">SKU: {item.product?.sku}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-destructive">{item.quantity}</p>
-                  <p className="text-xs text-muted-foreground">Mínimo: {item.minStock}</p>
-                </div>
-                <Button variant="outline" className="text-destructive border-destructive/50 hover:bg-destructive/10 text-xs md:text-base">
-                  Reabastecer
-                </Button>
-              </div>
+      {/* ➕ Formulario inventario */}
+      <Card className="p-4">
+        <h2 className="font-semibold mb-3">Agregar inventario (demo)</h2>
+        <form onSubmit={handleAddInventory} className="grid md:grid-cols-5 gap-3">
+          <select
+            className="border rounded-lg p-2"
+            value={newItem.productId}
+            onChange={e =>
+              setNewItem(p => ({ ...p, productId: e.target.value }))
+            }
+          >
+            <option value="">Producto</option>
+            {usableProducts.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
-          </div>
-        </Card>
-      )}
+          </select>
 
-      <Card className="overflow-hidden">
-        <div className="p-4 md:p-6 border-b border-border">
-          <h2 className="text-lg md:text-xl font-bold text-foreground">Niveles de Inventario</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm md:text-base">
-            <thead>
-              <tr className="border-b border-border bg-card/50">
-                <th className="text-left p-3 md:p-4 font-semibold text-foreground">Producto</th>
-                <th className="text-right p-3 md:p-4 font-semibold text-foreground">Cantidad</th>
-                <th className="text-right p-3 md:p-4 font-semibold text-foreground">Mínimo</th>
-                <th className="text-right p-3 md:p-4 font-semibold text-foreground">Máximo</th>
-                <th className="text-left p-3 md:p-4 font-semibold text-foreground">Acciones</th>
+          <input type="number" placeholder="Cantidad"
+            className="border p-2 rounded-lg"
+            value={newItem.quantity}
+            onChange={e =>
+              setNewItem(p => ({ ...p, quantity: e.target.value }))
+            }
+          />
+
+          <input type="number" placeholder="Mínimo"
+            className="border p-2 rounded-lg"
+            value={newItem.minStock}
+            onChange={e =>
+              setNewItem(p => ({ ...p, minStock: e.target.value }))
+            }
+          />
+
+          <input type="number" placeholder="Máximo"
+            className="border p-2 rounded-lg"
+            value={newItem.maxStock}
+            onChange={e =>
+              setNewItem(p => ({ ...p, maxStock: e.target.value }))
+            }
+          />
+
+          <Button type="submit" className="flex gap-2">
+            <Plus size={14} /> Agregar
+          </Button>
+        </form>
+      </Card>
+
+      {/* Tabla */}
+      <Card>
+        <table className="w-full text-sm">
+          <thead className="bg-card/50">
+            <tr>
+              <th className="p-3 text-left">Producto</th>
+              <th className="p-3 text-right">Cantidad</th>
+              <th className="p-3 text-right">Min</th>
+              <th className="p-3 text-right">Max</th>
+            </tr>
+          </thead>
+          <tbody>
+            {warehouseInventory.map(i => (
+              <tr key={i.id} className="border-t">
+                <td className="p-3">{i.product?.name}</td>
+                <td className="p-3 text-right font-bold">{i.quantity}</td>
+                <td className="p-3 text-right">{i.minStock}</td>
+                <td className="p-3 text-right">{i.maxStock}</td>
               </tr>
-            </thead>
-            <tbody>
-              {warehouseInventory.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                    No hay inventario registrado
-                  </td>
-                </tr>
-              ) : (
-                warehouseInventory.map((item) => (
-                  <tr key={item.id} className="border-b border-border hover:bg-card/50 transition-colors">
-                    <td className="p-3 md:p-4 font-medium text-foreground">{item.product?.name}</td>
-                    <td className="p-3 md:p-4 text-right">
-                      <span className={`px-3 py-1 rounded-lg font-bold text-xs md:text-base ${
-                        item.quantity === 0
-                          ? 'bg-destructive/20 text-destructive'
-                          : item.quantity < item.minStock
-                          ? 'bg-chart-4/20 text-chart-4'
-                          : 'bg-accent/20 text-accent'
-                      }`}>
-                        {item.quantity}
-                      </span>
-                    </td>
-                    <td className="p-3 md:p-4 text-right text-muted-foreground">{item.minStock}</td>
-                    <td className="p-3 md:p-4 text-right text-muted-foreground">{item.maxStock}</td>
-                    <td className="p-3 md:p-4">
-                      <Button variant="outline" size="sm" className="text-xs">
-                        Ajustar
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </Card>
     </div>
   )

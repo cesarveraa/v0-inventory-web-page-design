@@ -25,6 +25,22 @@ interface Usuario {
   es_dueno: boolean
 }
 
+interface Sucursal {
+  id_sucursal: number
+  nombre: string
+  direccion: string
+  telefono: string
+  estado: boolean
+}
+
+interface Almacen {
+  id_almacen: number
+  nombre: string
+  descripcion: string
+  es_principal: boolean
+  estado: boolean
+}
+
 export function SettingsPage() {
   const { user, currentWarehouse } = useInventoryStore()
   const [activeTab, setActiveTab] = useState<"general" | "users" | "warehouses" | "security">("general")
@@ -54,6 +70,40 @@ export function SettingsPage() {
   const [editingEmail, setEditingEmail] = useState("")
   const [editingEstado, setEditingEstado] = useState(true)
   const [updatingUser, setUpdatingUser] = useState(false)
+
+  // Sucursales
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [sucursalesLoading, setSucursalesLoading] = useState(true)
+  const [sucursalesError, setSucursalesError] = useState<string | null>(null)
+
+  const [newSucursalNombre, setNewSucursalNombre] = useState("")
+  const [newSucursalDireccion, setNewSucursalDireccion] = useState("")
+  const [newSucursalTelefono, setNewSucursalTelefono] = useState("")
+  const [creatingSucursal, setCreatingSucursal] = useState(false)
+
+  const [editingSucursalId, setEditingSucursalId] = useState<number | null>(null)
+  const [editingSucursalNombre, setEditingSucursalNombre] = useState("")
+  const [editingSucursalDireccion, setEditingSucursalDireccion] = useState("")
+  const [editingSucursalTelefono, setEditingSucursalTelefono] = useState("")
+  const [editingSucursalEstado, setEditingSucursalEstado] = useState(true)
+  const [updatingSucursal, setUpdatingSucursal] = useState(false)
+
+  // Almacenes
+  const [almacenes, setAlmacenes] = useState<Almacen[]>([])
+  const [almacenesLoading, setAlmacenesLoading] = useState(true)
+  const [almacenesError, setAlmacenesError] = useState<string | null>(null)
+
+  const [newAlmacenNombre, setNewAlmacenNombre] = useState("")
+  const [newAlmacenDescripcion, setNewAlmacenDescripcion] = useState("")
+  const [newAlmacenEsPrincipal, setNewAlmacenEsPrincipal] = useState(false)
+  const [newAlmacenSucursalId, setNewAlmacenSucursalId] = useState<number | "">("")
+  const [creatingAlmacen, setCreatingAlmacen] = useState(false)
+
+  const [editingAlmacenId, setEditingAlmacenId] = useState<number | null>(null)
+  const [editingAlmacenNombre, setEditingAlmacenNombre] = useState("")
+  const [editingAlmacenDescripcion, setEditingAlmacenDescripcion] = useState("")
+  const [editingAlmacenEsPrincipal, setEditingAlmacenEsPrincipal] = useState(false)
+  const [updatingAlmacen, setUpdatingAlmacen] = useState(false)
 
   const tabs = [
     { id: "general", label: "General" },
@@ -117,8 +167,54 @@ export function SettingsPage() {
       }
     }
 
+    const loadSucursales = async () => {
+      try {
+        setSucursalesLoading(true)
+        const res = await fetch("/api/sucursales", {
+          method: "GET",
+          credentials: "include",
+        })
+        if (!res.ok) {
+          throw new Error("No se pudo obtener la lista de sucursales")
+        }
+        const data = (await res.json()) as Sucursal[]
+        setSucursales(data)
+        setSucursalesError(null)
+      } catch (err) {
+        setSucursalesError(
+          err instanceof Error ? err.message : "Error al cargar sucursales",
+        )
+      } finally {
+        setSucursalesLoading(false)
+      }
+    }
+
+    const loadAlmacenes = async () => {
+      try {
+        setAlmacenesLoading(true)
+        const res = await fetch("/api/almacenes", {
+          method: "GET",
+          credentials: "include",
+        })
+        if (!res.ok) {
+          throw new Error("No se pudo obtener la lista de almacenes")
+        }
+        const data = (await res.json()) as Almacen[]
+        setAlmacenes(data)
+        setAlmacenesError(null)
+      } catch (err) {
+        setAlmacenesError(
+          err instanceof Error ? err.message : "Error al cargar almacenes",
+        )
+      } finally {
+        setAlmacenesLoading(false)
+      }
+    }
+
     loadEmpresa()
     loadUsuarios()
+    loadSucursales()
+    loadAlmacenes()
   }, [])
 
   // Guardar empresa
@@ -268,6 +364,220 @@ export function SettingsPage() {
     }
   }
 
+  // Crear sucursal
+  const handleCreateSucursal = async () => {
+    try {
+      setCreatingSucursal(true)
+      const res = await fetch("/api/sucursales", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: newSucursalNombre,
+          direccion: newSucursalDireccion,
+          telefono: newSucursalTelefono,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(
+          data.detail || data.message || "No se pudo crear la sucursal",
+        )
+      }
+      const created = (await res.json()) as Sucursal
+      setSucursales((prev) => [...prev, created])
+      setNewSucursalNombre("")
+      setNewSucursalDireccion("")
+      setNewSucursalTelefono("")
+      setSucursalesError(null)
+    } catch (err) {
+      setSucursalesError(
+        err instanceof Error ? err.message : "Error al crear sucursal",
+      )
+    } finally {
+      setCreatingSucursal(false)
+    }
+  }
+
+  const startEditSucursal = (s: Sucursal) => {
+    setEditingSucursalId(s.id_sucursal)
+    setEditingSucursalNombre(s.nombre)
+    setEditingSucursalDireccion(s.direccion)
+    setEditingSucursalTelefono(s.telefono)
+    setEditingSucursalEstado(s.estado)
+  }
+
+  const handleUpdateSucursal = async () => {
+    if (!editingSucursalId) return
+    try {
+      setUpdatingSucursal(true)
+      const res = await fetch(`/api/sucursales/${editingSucursalId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: editingSucursalNombre,
+          direccion: editingSucursalDireccion,
+          telefono: editingSucursalTelefono,
+          estado: editingSucursalEstado,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(
+          data.detail || data.message || "No se pudo actualizar la sucursal",
+        )
+      }
+      const updated = (await res.json()) as Sucursal
+      setSucursales((prev) =>
+        prev.map((s) =>
+          s.id_sucursal === updated.id_sucursal ? updated : s,
+        ),
+      )
+      setEditingSucursalId(null)
+    } catch (err) {
+      setSucursalesError(
+        err instanceof Error ? err.message : "Error al actualizar sucursal",
+      )
+    } finally {
+      setUpdatingSucursal(false)
+    }
+  }
+
+  const handleDeleteSucursal = async (id: number) => {
+    if (!confirm("¿Seguro que deseas eliminar esta sucursal?")) return
+    try {
+      const res = await fetch(`/api/sucursales/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      if (!res.ok && res.status !== 204) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(
+          data.detail || data.message || "No se pudo eliminar la sucursal",
+        )
+      }
+      setSucursales((prev) => prev.filter((s) => s.id_sucursal !== id))
+    } catch (err) {
+      setSucursalesError(
+        err instanceof Error ? err.message : "Error al eliminar sucursal",
+      )
+    }
+  }
+
+  // Crear almacén
+  const handleCreateAlmacen = async () => {
+    if (newAlmacenSucursalId === "") {
+      alert("Selecciona una sucursal para el almacén")
+      return
+    }
+    try {
+      setCreatingAlmacen(true)
+      const res = await fetch("/api/almacenes", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: newAlmacenNombre,
+          descripcion: newAlmacenDescripcion,
+          es_principal: newAlmacenEsPrincipal,
+          sucursal_id: Number(newAlmacenSucursalId),
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(
+          data.detail || data.message || "No se pudo crear el almacén",
+        )
+      }
+      const created = (await res.json()) as Almacen
+      setAlmacenes((prev) => [...prev, created])
+      setNewAlmacenNombre("")
+      setNewAlmacenDescripcion("")
+      setNewAlmacenEsPrincipal(false)
+      setNewAlmacenSucursalId("")
+      setAlmacenesError(null)
+    } catch (err) {
+      setAlmacenesError(
+        err instanceof Error ? err.message : "Error al crear almacén",
+      )
+    } finally {
+      setCreatingAlmacen(false)
+    }
+  }
+
+  const startEditAlmacen = (a: Almacen) => {
+    setEditingAlmacenId(a.id_almacen)
+    setEditingAlmacenNombre(a.nombre)
+    setEditingAlmacenDescripcion(a.descripcion)
+    setEditingAlmacenEsPrincipal(a.es_principal)
+  }
+
+  const handleUpdateAlmacen = async () => {
+    if (!editingAlmacenId) return
+    try {
+      setUpdatingAlmacen(true)
+      const res = await fetch(`/api/almacenes/${editingAlmacenId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: editingAlmacenNombre,
+          descripcion: editingAlmacenDescripcion,
+          es_principal: editingAlmacenEsPrincipal,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(
+          data.detail || data.message || "No se pudo actualizar el almacén",
+        )
+      }
+      const updated = (await res.json()) as Almacen
+      setAlmacenes((prev) =>
+        prev.map((a) =>
+          a.id_almacen === updated.id_almacen ? updated : a,
+        ),
+      )
+      setEditingAlmacenId(null)
+    } catch (err) {
+      setAlmacenesError(
+        err instanceof Error ? err.message : "Error al actualizar almacén",
+      )
+    } finally {
+      setUpdatingAlmacen(false)
+    }
+  }
+
+  const handleDeleteAlmacen = async (id: number) => {
+    if (!confirm("¿Seguro que deseas eliminar este almacén?")) return
+    try {
+      const res = await fetch(`/api/almacenes/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      if (!res.ok && res.status !== 204) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(
+          data.detail || data.message || "No se pudo eliminar el almacén",
+        )
+      }
+      setAlmacenes((prev) => prev.filter((a) => a.id_almacen !== id))
+    } catch (err) {
+      setAlmacenesError(
+        err instanceof Error ? err.message : "Error al eliminar almacén",
+      )
+    }
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
@@ -286,8 +596,8 @@ export function SettingsPage() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-3 md:px-4 py-3 font-medium border-b-2 transition-colors text-xs md:text-base ${activeTab === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
           >
             {tab.label}
@@ -532,8 +842,8 @@ export function SettingsPage() {
                         <td className="p-3 md:p-4">
                           <span
                             className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium ${u.estado
-                                ? "bg-emerald-500/10 text-emerald-500"
-                                : "bg-destructive/10 text-destructive"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : "bg-destructive/10 text-destructive"
                               }`}
                           >
                             {u.estado ? "Activo" : "Inactivo"}
@@ -628,62 +938,418 @@ export function SettingsPage() {
       )}
 
       {/* Warehouses (igual que ya tenías) */}
+      {/* Sucursales + Almacenes */}
       {activeTab === "warehouses" && (
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <h2 className="text-lg md:text-xl font-bold text-foreground">
-              Mis Almacenes
-            </h2>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full md:w-auto">
-              <Plus size={16} className="md:size-20" />
-              Nuevo Almacén
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {user?.warehouses.map((warehouse: any) => (
-              <Card key={warehouse.id} className="p-4 md:p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="font-bold text-foreground text-sm md:text-base">
-                    {warehouse.name}
-                  </h3>
-                  <div className="flex gap-2">
-                    <button className="p-1 hover:bg-muted rounded">
-                      <Edit2
-                        size={14}
-                        className="text-muted-foreground md:size-16"
-                      />
-                    </button>
-                    <button className="p-1 hover:bg-muted rounded">
-                      <Trash2
-                        size={14}
-                        className="text-destructive md:size-16"
-                      />
-                    </button>
-                  </div>
+        <div className="space-y-8">
+          {/* Sucursales */}
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground">
+                Sucursales
+              </h2>
+            </div>
+
+            {sucursalesError && (
+              <p className="text-sm text-destructive">{sucursalesError}</p>
+            )}
+
+            {/* Crear sucursal */}
+            <Card className="p-4 md:p-6 space-y-4">
+              <h3 className="font-semibold text-foreground text-sm md:text-base">
+                Nueva Sucursal
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input
+                  type="text"
+                  placeholder="Nombre"
+                  value={newSucursalNombre}
+                  onChange={(e) => setNewSucursalNombre(e.target.value)}
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Dirección"
+                  value={newSucursalDireccion}
+                  onChange={(e) => setNewSucursalDireccion(e.target.value)}
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                />
+                <input
+                  type="tel"
+                  placeholder="Teléfono"
+                  value={newSucursalTelefono}
+                  onChange={(e) => setNewSucursalTelefono(e.target.value)}
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={handleCreateSucursal}
+                disabled={creatingSucursal}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground w-full md:w-auto"
+              >
+                <Plus size={16} />
+                {creatingSucursal ? "Creando..." : "Crear Sucursal"}
+              </Button>
+            </Card>
+
+            <Card className="overflow-hidden">
+              {sucursalesLoading ? (
+                <p className="p-4 text-sm text-muted-foreground">
+                  Cargando sucursales...
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm md:text-base">
+                    <thead>
+                      <tr className="border-b border-border bg-card/50">
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Nombre
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Dirección
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Teléfono
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Estado
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sucursales.map((s) => (
+                        <tr
+                          key={s.id_sucursal}
+                          className="border-b border-border hover:bg-card/50 transition-colors"
+                        >
+                          <td className="p-3 md:p-4 font-medium text-foreground text-xs md:text-base">
+                            {s.nombre}
+                          </td>
+                          <td className="p-3 md:p-4 text-muted-foreground text-xs md:text-base">
+                            {s.direccion}
+                          </td>
+                          <td className="p-3 md:p-4 text-muted-foreground text-xs md:text-base">
+                            {s.telefono}
+                          </td>
+                          <td className="p-3 md:p-4">
+                            <span
+                              className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium ${s.estado
+                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  : "bg-destructive/10 text-destructive"
+                                }`}
+                            >
+                              {s.estado ? "Activa" : "Inactiva"}
+                            </span>
+                          </td>
+                          <td className="p-3 md:p-4 flex gap-2">
+                            <button
+                              className="p-1.5 md:p-2 hover:bg-muted rounded-lg transition-colors"
+                              onClick={() => startEditSucursal(s)}
+                            >
+                              <Edit2
+                                size={16}
+                                className="text-muted-foreground md:size-18"
+                              />
+                            </button>
+                            <button
+                              className="p-1.5 md:p-2 hover:bg-muted rounded-lg transition-colors"
+                              onClick={() => handleDeleteSucursal(s.id_sucursal)}
+                            >
+                              <Trash2
+                                size={16}
+                                className="text-destructive md:size-18"
+                              />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-xs md:text-sm text-muted-foreground">
-                    Ubicación: {warehouse.location}
-                  </p>
-                  <div className="flex items-center justify-between mt-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Estado</p>
-                      <p className="font-bold text-foreground text-sm">
-                        Activo
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        Productos
-                      </p>
-                      <p className="font-bold text-accent text-sm">
-                        {warehouse.products.length}
-                      </p>
-                    </div>
-                  </div>
+              )}
+            </Card>
+
+            {editingSucursalId && (
+              <Card className="p-4 md:p-6 space-y-4">
+                <h3 className="font-semibold text-foreground text-sm md:text-base">
+                  Editar Sucursal
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Nombre"
+                    value={editingSucursalNombre}
+                    onChange={(e) =>
+                      setEditingSucursalNombre(e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Dirección"
+                    value={editingSucursalDireccion}
+                    onChange={(e) =>
+                      setEditingSucursalDireccion(e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Teléfono"
+                    value={editingSucursalTelefono}
+                    onChange={(e) =>
+                      setEditingSucursalTelefono(e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                  />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={editingSucursalEstado}
+                      onChange={(e) =>
+                        setEditingSucursalEstado(e.target.checked)
+                      }
+                    />
+                    <span>Activa</span>
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleUpdateSucursal}
+                    disabled={updatingSucursal}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Save size={16} />
+                    {updatingSucursal ? "Guardando..." : "Guardar cambios"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditingSucursalId(null)}
+                  >
+                    Cancelar
+                  </Button>
                 </div>
               </Card>
-            ))}
+            )}
+          </div>
+
+          {/* Almacenes */}
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground">
+                Almacenes
+              </h2>
+            </div>
+
+            {almacenesError && (
+              <p className="text-sm text-destructive">{almacenesError}</p>
+            )}
+
+            {/* Crear almacén */}
+            <Card className="p-4 md:p-6 space-y-4">
+              <h3 className="font-semibold text-foreground text-sm md:text-base">
+                Nuevo Almacén
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input
+                  type="text"
+                  placeholder="Nombre"
+                  value={newAlmacenNombre}
+                  onChange={(e) => setNewAlmacenNombre(e.target.value)}
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Descripción"
+                  value={newAlmacenDescripcion}
+                  onChange={(e) => setNewAlmacenDescripcion(e.target.value)}
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                />
+                <select
+                  value={newAlmacenSucursalId}
+                  onChange={(e) =>
+                    setNewAlmacenSucursalId(
+                      e.target.value === "" ? "" : Number(e.target.value),
+                    )
+                  }
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                >
+                  <option value="">Sucursal asociada</option>
+                  {sucursales.map((s) => (
+                    <option key={s.id_sucursal} value={s.id_sucursal}>
+                      {s.nombre}
+                    </option>
+                  ))}
+                </select>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={newAlmacenEsPrincipal}
+                    onChange={(e) =>
+                      setNewAlmacenEsPrincipal(e.target.checked)
+                    }
+                  />
+                  <span>Es principal</span>
+                </label>
+              </div>
+              <Button
+                type="button"
+                onClick={handleCreateAlmacen}
+                disabled={creatingAlmacen}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground w-full md:w-auto"
+              >
+                <Plus size={16} />
+                {creatingAlmacen ? "Creando..." : "Crear Almacén"}
+              </Button>
+            </Card>
+
+            <Card className="overflow-hidden">
+              {almacenesLoading ? (
+                <p className="p-4 text-sm text-muted-foreground">
+                  Cargando almacenes...
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm md:text-base">
+                    <thead>
+                      <tr className="border-b border-border bg-card/50">
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Nombre
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Descripción
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Principal
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Estado
+                        </th>
+                        <th className="text-left p-3 md:p-4 font-semibold text-foreground">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {almacenes.map((a) => (
+                        <tr
+                          key={a.id_almacen}
+                          className="border-b border-border hover:bg-card/50 transition-colors"
+                        >
+                          <td className="p-3 md:p-4 font-medium text-foreground text-xs md:text-base">
+                            {a.nombre}
+                          </td>
+                          <td className="p-3 md:p-4 text-muted-foreground text-xs md:text-base">
+                            {a.descripcion}
+                          </td>
+                          <td className="p-3 md:p-4">
+                            <span
+                              className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium ${a.es_principal
+                                  ? "bg-indigo-500/10 text-indigo-500"
+                                  : "bg-muted text-muted-foreground"
+                                }`}
+                            >
+                              {a.es_principal ? "Principal" : "Secundario"}
+                            </span>
+                          </td>
+                          <td className="p-3 md:p-4">
+                            <span
+                              className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium ${a.estado
+                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  : "bg-destructive/10 text-destructive"
+                                }`}
+                            >
+                              {a.estado ? "Activo" : "Inactivo"}
+                            </span>
+                          </td>
+                          <td className="p-3 md:p-4 flex gap-2">
+                            <button
+                              className="p-1.5 md:p-2 hover:bg-muted rounded-lg transition-colors"
+                              onClick={() => startEditAlmacen(a)}
+                            >
+                              <Edit2
+                                size={16}
+                                className="text-muted-foreground md:size-18"
+                              />
+                            </button>
+                            <button
+                              className="p-1.5 md:p-2 hover:bg-muted rounded-lg transition-colors"
+                              onClick={() => handleDeleteAlmacen(a.id_almacen)}
+                            >
+                              <Trash2
+                                size={16}
+                                className="text-destructive md:size-18"
+                              />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+
+            {editingAlmacenId && (
+              <Card className="p-4 md:p-6 space-y-4">
+                <h3 className="font-semibold text-foreground text-sm md:text-base">
+                  Editar Almacén
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Nombre"
+                    value={editingAlmacenNombre}
+                    onChange={(e) =>
+                      setEditingAlmacenNombre(e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Descripción"
+                    value={editingAlmacenDescripcion}
+                    onChange={(e) =>
+                      setEditingAlmacenDescripcion(e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
+                  />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={editingAlmacenEsPrincipal}
+                      onChange={(e) =>
+                        setEditingAlmacenEsPrincipal(e.target.checked)
+                      }
+                    />
+                    <span>Es principal</span>
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleUpdateAlmacen}
+                    disabled={updatingAlmacen}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Save size={16} />
+                    {updatingAlmacen ? "Guardando..." : "Guardar cambios"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditingAlmacenId(null)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       )}

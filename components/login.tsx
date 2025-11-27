@@ -40,7 +40,7 @@ export function Login() {
     setError("")
     setLoading(true)
     try {
-      await login("demo@abyss.com", "demo123")
+      await login("demo@Dyson.com", "demo123")
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión")
@@ -56,9 +56,9 @@ export function Login() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
+              <span className="text-white font-bold text-sm">D</span>
             </div>
-            <span className="text-white font-bold text-xl">Abyss</span>
+            <span className="text-white font-bold text-xl">Dyson</span>
           </Link>
         </div>
       </div>
@@ -66,7 +66,7 @@ export function Login() {
       <Card className="w-full max-w-md bg-slate-900/50 border-slate-800 p-8 space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-white">Bienvenido</h1>
-          <p className="text-slate-400">Inicia sesión en tu cuenta de Abyss</p>
+          <p className="text-slate-400">Inicia sesión en tu cuenta de Dyson</p>
         </div>
 
         {error && (

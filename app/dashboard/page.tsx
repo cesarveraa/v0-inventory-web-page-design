@@ -15,11 +15,12 @@ import { useKeyboardShortcuts, type KeyboardShortcut } from "@/hooks/use-keyboar
 import { useShortcuts } from "@/components/shortcuts-provider"
 import { LoadingSpinner } from "@/components/loading-spinner"
 
+// Fallback visual si aún no hay almacenes creados o algo falla
 const SAMPLE_WAREHOUSES = [
   {
     id: "warehouse-1",
     name: "Almacén Principal",
-    location: "Bogotá",
+    location: "La Paz",
     products: [],
     inventory: [],
     sales: [],
@@ -27,7 +28,7 @@ const SAMPLE_WAREHOUSES = [
   {
     id: "warehouse-2",
     name: "Almacén Secundario",
-    location: "Medellín",
+    location: "El Alto",
     products: [],
     inventory: [],
     sales: [],
@@ -36,7 +37,7 @@ const SAMPLE_WAREHOUSES = [
 
 export default function DashboardPageRoute() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const user = useAuthStore((s) => s.user)
+  const authUser = useAuthStore((s) => s.user)
   const router = useRouter()
   const [currentPage, setCurrentPage] = useState("dashboard")
   const [mounted, setMounted] = useState(false)
@@ -115,23 +116,81 @@ export default function DashboardPageRoute() {
     setMounted(true)
   }, [])
 
+  // Redirige si no está autenticado
   useEffect(() => {
     if (mounted && !isAuthenticated) {
       router.push("/login")
     }
   }, [isAuthenticated, router, mounted])
 
+  // 🔥 Cargar almacenes reales y armar el user del inventory store
   useEffect(() => {
-    if (user) {
-      setUser({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        warehouses: SAMPLE_WAREHOUSES,
-      })
-      setCurrentWarehouse(SAMPLE_WAREHOUSES[0])
+    if (!authUser) return
+
+    let cancelled = false
+
+    const { id_usuario, nombre, apellido, email } = authUser
+
+    async function loadWarehouses() {
+      try {
+        const res = await fetch("/api/almacenes", {
+          method: "GET",
+          credentials: "include",
+        })
+
+        let almacenesData: any[] = []
+        if (res.ok) {
+          almacenesData = await res.json()
+        }
+
+        if (cancelled) return
+
+        const warehouses = almacenesData.map((a) => ({
+          id: String(a.id_almacen),
+          name: a.nombre,
+          location: a.descripcion || "Almacén",
+          products: [],
+          inventory: [],
+          sales: [],
+        }))
+
+        const mappedUser = {
+          id: String(id_usuario),
+          name: [nombre, apellido].filter(Boolean).join(" "),
+          email,
+          warehouses: warehouses.length > 0 ? warehouses : SAMPLE_WAREHOUSES,
+        }
+
+        setUser(mappedUser)
+
+        if (warehouses.length > 0) {
+          setCurrentWarehouse(warehouses[0])
+        } else {
+          setCurrentWarehouse(SAMPLE_WAREHOUSES[0])
+        }
+      } catch (err) {
+        console.error("Error cargando almacenes, usando SAMPLE_WAREHOUSES:", err)
+
+        if (cancelled) return
+
+        const mappedUser = {
+          id: String(id_usuario),
+          name: [nombre, apellido].filter(Boolean).join(" "),
+          email,
+          warehouses: SAMPLE_WAREHOUSES,
+        }
+
+        setUser(mappedUser)
+        setCurrentWarehouse(SAMPLE_WAREHOUSES[0])
+      }
     }
-  }, [user, setUser, setCurrentWarehouse])
+
+    loadWarehouses()
+
+    return () => {
+      cancelled = true
+    }
+  }, [authUser, setUser, setCurrentWarehouse])
 
   useEffect(() => {
     registerShortcuts(shortcuts)

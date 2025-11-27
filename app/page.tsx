@@ -17,30 +17,6 @@ import { Landing } from "@/components/landing"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { Menu } from "lucide-react"
 
-const SAMPLE_USER = {
-  id: "user-1",
-  name: "Admin",
-  email: "admin@example.com",
-  warehouses: [
-    {
-      id: "warehouse-1",
-      name: "Almacén Principal",
-      location: "Bogotá",
-      products: [],
-      inventory: [],
-      sales: [],
-    },
-    {
-      id: "warehouse-2",
-      name: "Almacén Secundario",
-      location: "Medellín",
-      products: [],
-      inventory: [],
-      sales: [],
-    },
-  ],
-}
-
 export default function Home() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const router = useRouter()
@@ -135,9 +111,72 @@ export default function Home() {
   }, [isAuthenticated, router, mounted])
 
   useEffect(() => {
-    if (isAuthenticated) {
-      setUser(SAMPLE_USER)
-      setCurrentWarehouse(SAMPLE_USER.warehouses[0])
+    if (!isAuthenticated) return
+
+    let cancelled = false
+
+    async function loadUserAndWarehouses() {
+      try {
+        // Usuario actual (backend: /auth/me -> proxy: /api/auth)
+        const userRes = await fetch("/api/auth", {
+          method: "GET",
+          credentials: "include",
+        })
+
+        if (!userRes.ok) {
+          throw new Error("No se pudo obtener el usuario actual")
+        }
+
+        const userData = await userRes.json()
+
+        // Almacenes reales (backend: /almacenes -> proxy: /api/almacenes)
+        const almacenesRes = await fetch("/api/almacenes", {
+          method: "GET",
+          credentials: "include",
+        })
+
+        let almacenesData: any[] = []
+        if (almacenesRes.ok) {
+          almacenesData = await almacenesRes.json()
+        }
+
+        if (cancelled) return
+
+        const warehouses = almacenesData.map((a) => ({
+          id: String(a.id_almacen),
+          name: a.nombre,
+          // De momento usamos la descripción como "ubicación" visible
+          location: a.descripcion || "Almacén",
+          products: [],
+          inventory: [],
+          sales: [],
+        }))
+
+        const mappedUser = {
+          id: String(userData.id_usuario ?? userData.id ?? "user-unknown"),
+          name:
+            [userData.nombre, userData.apellido].filter(Boolean).join(" ") ||
+            userData.name ||
+            "Sin nombre",
+          email: userData.email ?? "sin-email",
+          warehouses,
+        }
+
+        setUser(mappedUser)
+
+        if (warehouses.length > 0) {
+          setCurrentWarehouse(warehouses[0])
+        }
+      } catch (err) {
+        console.error("Error cargando datos reales, usando SAMPLE_USER como fallback:", err)
+        if (cancelled) return
+      }
+    }
+
+    loadUserAndWarehouses()
+
+    return () => {
+      cancelled = true
     }
   }, [isAuthenticated, setUser, setCurrentWarehouse])
 
@@ -169,16 +208,16 @@ export default function Home() {
   }
 
   return (
-  <div className="flex h-screen bg-background">
-    <Sidebar
-      currentPage={currentPage}
-      onPageChange={setCurrentPage}
-    />
+    <div className="flex h-screen bg-background">
+      <Sidebar
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+      />
 
-    <main className="flex-1 overflow-auto">
-      {renderPage()}
-    </main>
-  </div>
-)
+      <main className="flex-1 overflow-auto">
+        {renderPage()}
+      </main>
+    </div>
+  )
 
 }

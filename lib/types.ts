@@ -15,16 +15,6 @@ export interface Warehouse {
   sales: Sale[]
 }
 
-export interface Product {
-  id: string
-  name: string
-  sku: string
-  price: number
-  cost: number
-  category: string
-  description: string
-  image?: string
-}
 
 export interface InventoryItem {
   id: string
@@ -60,4 +50,16 @@ export interface OrderItem {
   productId: string
   quantity: number
   price: number
+}
+// lib/types.ts
+export interface Product {
+  id: string
+  sku: string
+  name: string
+  category: string
+  price: number
+  cost?: number
+  stock?: number
+  // opcional para debug
+  _raw?: unknown
 }

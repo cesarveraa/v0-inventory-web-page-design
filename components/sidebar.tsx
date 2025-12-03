@@ -67,7 +67,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
             {isOpen && (
               <div className="flex flex-col">
                 <h1 className="font-bold text-sm text-foreground whitespace-nowrap">
-                  Dyson Inventario
+                  Pneuma Inventario
                 </h1>
                 <p className="text-xs text-muted-foreground">Pro</p>
               </div>

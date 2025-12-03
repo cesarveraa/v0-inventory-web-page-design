@@ -1,17 +1,24 @@
 "use client"
 
+import { useState, useMemo, useRef, useEffect, FormEvent } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Search, PackagePlus } from "lucide-react"
-import { useState, useMemo, useRef, useEffect, FormEvent } from "react"
+
 import { useInventoryStore } from "@/lib/store"
-import { QuickProductForm } from "@/components/forms/quick-product-form"
+import { useAuthStore } from "@/lib/auth-store"
 import { ProductTable } from "@/components/products/product-table"
+import { QuickProductForm } from "@/components/forms/quick-product-form"
 import {
   useKeyboardShortcuts,
   type KeyboardShortcut,
 } from "@/hooks/use-keyboard-shortcuts"
 import { useShortcuts } from "@/components/shortcuts-provider"
+
+import {
+  fetchProductsFromApi,
+  mapBackendToFrontProduct,
+} from "@/lib/api/products"
 
 type DemoProduct = {
   id: string
@@ -23,13 +30,22 @@ type DemoProduct = {
   stock?: number
 }
 
-export function ProductsPage() {
-  const { products } = useInventoryStore()
+function formatMoney(value: string) {
+  const num = Number(value || 0)
+  return num.toFixed(2)
+}
+
+export default function ProductsPage() {
+  const { user } = useAuthStore()
+  const { products, setProducts } = useInventoryStore()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [useDemoProducts, setUseDemoProducts] = useState(false)
   const [customProducts, setCustomProducts] = useState<DemoProduct[]>([])
-  const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
   const { registerShortcuts } = useShortcuts()
 
   // 🔹 Productos DEMO solo para la demo (no tocan el store real)
@@ -84,12 +100,49 @@ export function ProductsPage() {
     [],
   )
 
-  // Si no hay productos reales, activamos demo por defecto
+  // 🔌 Cargar productos reales del backend
   useEffect(() => {
-    if (products.length === 0) {
-      setUseDemoProducts(true)
+    const loadProducts = async () => {
+      // si no hay usuario o no tiene empresa, usamos solo demo
+      if (!user || !user.empresa) {
+        if (products.length === 0) setUseDemoProducts(true)
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError(null)
+
+        const backendProducts = await fetchProductsFromApi()
+
+        // multi-tenant: solo productos de la empresa actual
+        const filtered = backendProducts.filter(
+          (p) => p.empresas_id_empresa === user.empresa!.id_empresa,
+        )
+
+        const mapped = filtered.map(mapBackendToFrontProduct)
+
+        setProducts(mapped)
+
+        if (mapped.length === 0) {
+          setUseDemoProducts(true)
+        } else {
+          setUseDemoProducts(false)
+        }
+      } catch (err: any) {
+        console.error("Error cargando productos:", err)
+        setError(err.message ?? "Error al cargar productos")
+        if (products.length === 0) {
+          setUseDemoProducts(true)
+        }
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [products.length])
+
+    loadProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   // 🧠 Atajo de teclado Ctrl+F para enfocar el buscador
   const shortcuts = useMemo<KeyboardShortcut[]>(
@@ -114,7 +167,7 @@ export function ProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ⭐ Formulario para agregar producto (solo front)
+  // ⭐ Formulario para agregar producto rápido (demo solo frontend)
   const [newProduct, setNewProduct] = useState({
     name: "",
     sku: "",
@@ -125,9 +178,7 @@ export function ProductsPage() {
 
   const handleAddProduct = (e: FormEvent) => {
     e.preventDefault()
-    if (!newProduct.name.trim() || !newProduct.sku.trim()) {
-      return
-    }
+    if (!newProduct.name.trim() || !newProduct.sku.trim()) return
 
     const priceNum = parseFloat(newProduct.price) || 0
     const costNum = parseFloat(newProduct.cost) || 0
@@ -156,10 +207,11 @@ export function ProductsPage() {
   // Lista que realmente se muestra (reales + demo + agregados en front)
   const allProducts = useMemo(() => {
     const base = useDemoProducts
-      ? (products.length ? products : demoProducts)
+      ? products.length
+        ? products
+        : demoProducts
       : products
 
-    // merge: base (store o demo) + agregados manuales
     return [...(base as any[]), ...customProducts]
   }, [products, demoProducts, useDemoProducts, customProducts])
 
@@ -188,10 +240,17 @@ export function ProductsPage() {
           <p className="text-muted-foreground mt-2">
             Gestiona tu catálogo de productos para la cooperativa / almacén
           </p>
+          {user?.empresa && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Empresa activa:{" "}
+              <span className="font-medium">{user.empresa.nombre}</span> (ID{" "}
+              {user.empresa.id_empresa})
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2">
-          {/* Tu formulario real (si ya lo tienes conectado al backend) */}
+          {/* Formulario real para ajustar stock (usa productos del store) */}
           <QuickProductForm />
 
           {/* Botón para cargar / ocultar productos de ejemplo */}
@@ -225,7 +284,16 @@ export function ProductsPage() {
         />
       </div>
 
-      {/* Formulario rápido para agregar producto (solo front) */}
+      {loading && (
+        <p className="text-xs text-muted-foreground">Cargando productos...</p>
+      )}
+      {error && (
+        <p className="text-xs text-destructive">
+          Error al cargar productos: {error}
+        </p>
+      )}
+
+      {/* Formulario rápido para agregar producto (solo front / demo) */}
       <Card className="p-4 md:p-5 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -233,8 +301,8 @@ export function ProductsPage() {
               Agregar producto rápido (demo frontend)
             </h2>
             <p className="text-xs text-muted-foreground">
-              Los productos agregados aquí se guardan solo en esta sesión para la
-              demostración.
+              Los productos agregados aquí se guardan solo en esta sesión para
+              la demostración. No se crean en el backend.
             </p>
           </div>
         </div>
@@ -301,15 +369,15 @@ export function ProductsPage() {
         </form>
       </Card>
 
-      {/* Tabla */}
+      {/* Tabla de productos */}
       <Card className="overflow-hidden">
         <ProductTable products={filteredProducts as any} />
       </Card>
 
-      {allProducts.length === 0 && !useDemoProducts && (
+      {allProducts.length === 0 && !useDemoProducts && !loading && (
         <p className="text-xs text-muted-foreground mt-2">
-          Aún no tienes productos registrados. Puedes crear uno nuevo con el
-          formulario rápido o cargar productos de ejemplo para la demostración.
+          Aún no tienes productos registrados para esta empresa. Puedes usar el
+          formulario rápido (solo demo) o cargar productos de ejemplo.
         </p>
       )}
     </div>

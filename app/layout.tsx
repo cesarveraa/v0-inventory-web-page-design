@@ -10,7 +10,7 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Dyson - Gestión de Inventarios",
+  title: "Pneuma - Gestión de Inventarios",
   description: "Plataforma completa de software empresarial para gestionar inventarios, productos, ventas y análisis",
   generator: "v0.app",
 }

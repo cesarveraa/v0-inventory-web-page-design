@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { Eye, EyeOff, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import Image from "next/image"
 
 export function Login() {
   const router = useRouter()
@@ -40,7 +41,7 @@ export function Login() {
     setError("")
     setLoading(true)
     try {
-      await login("demo@Dyson.com", "demo123")
+      await login("demo@Pneuma.com", "demo123")
       router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión")
@@ -55,10 +56,16 @@ export function Login() {
       <div className="absolute top-0 left-0 right-0 border-b border-slate-800 bg-slate-950/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">D</span>
-            </div>
-            <span className="text-white font-bold text-xl">Dyson</span>
+             <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-900 flex items-center justify-center">
+                            <Image
+                              src="/logo.svg"
+                              alt="Pneuma logo"
+                              width={64}
+                              height={64}
+                              className="object-contain"
+                            />
+                          </div>
+            <span className="text-white font-bold text-xl">Pneuma</span>
           </Link>
         </div>
       </div>
@@ -66,7 +73,7 @@ export function Login() {
       <Card className="w-full max-w-md bg-slate-900/50 border-slate-800 p-8 space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-white">Bienvenido</h1>
-          <p className="text-slate-400">Inicia sesión en tu cuenta de Dyson</p>
+          <p className="text-slate-400">Inicia sesión en tu cuenta de Pneuma</p>
         </div>
 
         {error && (

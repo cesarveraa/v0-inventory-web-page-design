@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { DashboardPage } from "@/components/pages/dashboard"
-import { ProductsPage } from "@/components/pages/products"
+import  ProductsPage  from "@/components/pages/products"
 import { InventoryPage } from "@/components/pages/inventory"
 import { SalesPage } from "@/components/pages/sales"
 import { ReportsPage } from "@/components/pages/reports"

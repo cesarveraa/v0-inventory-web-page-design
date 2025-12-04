@@ -27,7 +27,7 @@ export function Landing() {
             <span className="text-white font-bold text-xl">Pneuma</span>
           </div>
           <Link href="/login">
-            <Button variant="outline" className="border-slate-700 hover:bg-slate-800 bg-transparent">
+            <Button variant="outline" className="border-slate-600 hover:border-blue-500/50 hover:bg-blue-500/10 bg-transparent text-slate-200 hover:text-blue-300 transition-all">
               Ingresar
             </Button>
           </Link>
@@ -55,11 +55,11 @@ export function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Link href="/login">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 gap-2">
-                Comenzar Ahora <ArrowRight className="w-4 h-4" />
-              </Button>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold gap-2 shadow-lg hover:shadow-blue-500/50 transition-all duration-200">
+              Comenzar Ahora <ArrowRight className="w-4 h-4" />
+            </Button>
             </Link>
-            <Button size="lg" variant="outline" className="border-slate-700 hover:bg-slate-800 bg-transparent">
+            <Button size="lg" variant="outline" className="border-slate-600 hover:border-blue-500/50 hover:bg-blue-500/10 bg-transparent text-slate-200 hover:text-blue-300 font-semibold transition-all">
               Ver Demo
             </Button>
           </div>

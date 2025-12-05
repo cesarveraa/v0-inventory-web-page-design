@@ -31,9 +31,7 @@ export function ProductTable({ products }: ProductTableProps) {
             <th className="text-right p-3 md:p-4 font-semibold text-foreground text-sm md:text-base">
               Precio
             </th>
-            <th className="text-right p-3 md:p-4 font-semibold text-foreground text-sm md:text-base">
-              Costo
-            </th>
+            
             <th className="text-left p-3 md:p-4 font-semibold text-foreground text-sm md:text-base">
               Acciones
             </th>
@@ -67,9 +65,7 @@ export function ProductTable({ products }: ProductTableProps) {
                 <td className="p-3 md:p-4 font-medium text-foreground text-right text-sm md:text-base">
                   {formatMoney((product as any).price)}
                 </td>
-                <td className="p-3 md:p-4 text-muted-foreground text-right text-sm md:text-base">
-                  {formatMoney((product as any).cost)}
-                </td>
+             
                 <td className="p-3 md:p-4 flex gap-2">
                   <button className="p-1.5 md:p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground">
                     <Edit2 size={16} className="md:size-18" />

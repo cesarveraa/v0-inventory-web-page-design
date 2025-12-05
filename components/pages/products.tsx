@@ -57,7 +57,7 @@ export default function ProductsPage() {
         name: "Explosivo ANFO 25 kg",
         category: "Explosivos",
         price: 350.5,
-        cost: 260,
+       
         stock: 40,
       },
       {
@@ -66,7 +66,7 @@ export default function ProductsPage() {
         name: "Concentrado estaño 60%",
         category: "Mineral concentrado",
         price: 14500,
-        cost: 11000,
+       
         stock: 18,
       },
       {
@@ -75,7 +75,7 @@ export default function ProductsPage() {
         name: "Casco minero con lámpara",
         category: "Seguridad industrial",
         price: 420,
-        cost: 300,
+      
         stock: 32,
       },
       {
@@ -84,7 +84,7 @@ export default function ProductsPage() {
         name: "Perforadora neumática",
         category: "Equipos",
         price: 12500,
-        cost: 9100,
+       
         stock: 6,
       },
       {
@@ -93,7 +93,7 @@ export default function ProductsPage() {
         name: "Guantes de cuero reforzados",
         category: "Seguridad industrial",
         price: 85,
-        cost: 55,
+      
         stock: 120,
       },
     ],
@@ -349,16 +349,7 @@ export default function ProductsPage() {
             className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
           />
           <div className="flex gap-2">
-            <input
-              type="number"
-              step="0.01"
-              placeholder="Costo (Bs)"
-              value={newProduct.cost}
-              onChange={(e) =>
-                setNewProduct((p) => ({ ...p, cost: e.target.value }))
-              }
-              className="w-full px-3 py-2 bg-input border border-border rounded-lg text-sm"
-            />
+            
             <Button
               type="submit"
               className="whitespace-nowrap text-xs md:text-sm px-3"

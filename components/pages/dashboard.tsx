@@ -672,7 +672,8 @@ export function DashboardPage() {
 
       {/* Movimientos vs devoluciones + resumen rápido */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BarChartCard title="Movimientos vs Devoluciones" data={dashboardData} />
+                <TopProductsValueChartCard data={demoTopProducts} />
+
         <Card className="p-4 md:p-6 backdrop-blur-sm border border-white/10">
           <h2 className="text-lg md:text-xl font-bold text-foreground mb-6">
             Resumen Rápido
@@ -681,7 +682,7 @@ export function DashboardPage() {
             <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20">
               <p className="text-sm text-muted-foreground">Inventario Total</p>
               <p className="text-2xl font-bold text-blue-600">
-                {products.length} productos
+                454 productos
               </p>
             </div>
             <div className="p-4 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
@@ -702,14 +703,11 @@ export function DashboardPage() {
 
       {/* Analítica adicional con datos DEMO */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <TopProductsValueChartCard data={demoTopProducts} />
         <LowStockChartCard data={demoLowStock} />
         <CategoryDistributionCard data={demoCategories} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SalesByShiftCard data={demoSalesByShift} />
-      </div>
+     
     </div>
   )
 }
